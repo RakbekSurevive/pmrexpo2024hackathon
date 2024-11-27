@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { pb } from '../../lib/pocketbase';
 import type { Emergency } from '../../types/emergency';
 import { ClientResponseError } from 'pocketbase';
+import { ChevronLeftIcon } from '@heroicons/react/20/solid';
 
 export default function DetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -36,7 +37,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
       </div>
     );
@@ -44,37 +45,58 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
   if (!emergency) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-xl text-red-600">Emergency not found</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-8">
-      <main className="max-w-3xl mx-auto space-y-6">
-        <h1 className="text-3xl font-bold">Emergency Details</h1>
-        <div className="space-y-4">
-          <p className="text-lg">
-            <span className="font-semibold">Priority:</span>{' '}
-            <span className={emergency.emergency_priority === 'high' ? 'text-red-600' : 'text-blue-600'}>
-              {emergency.emergency_priority}
-            </span>
-          </p>
-          <p className="text-lg">
-            <span className="font-semibold">Type:</span>{' '}
-            <span className="text-slate-600">{emergency.emergency_type}</span>
-          </p>
-          <p className="text-lg">
-            <span className="font-semibold">Location:</span>{' '}
-            <span className="text-slate-600">{emergency.location}</span>
-          </p>
-          <p className="text-lg">
-            <span className="font-semibold">Current Situation:</span>{' '}
-            <span className="text-slate-600">{emergency.current_situation}</span>
-          </p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div className="mb-8 flex items-center gap-4">
+          <button 
+            onClick={() => router.back()} 
+            className="inline-flex items-center text-gray-600 hover:text-gray-900"
+          >
+            <ChevronLeftIcon className="h-5 w-5" />
+            <span>Back</span>
+          </button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Emergency Details</h1>
+            <p className="mt-2 text-sm text-gray-600">Detailed view of the emergency ticket</p>
+          </div>
         </div>
-      </main>
+
+        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+          <div className="px-4 py-5 sm:px-6">
+            <div className="flex items-center gap-4 mb-4">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                emergency.emergency_priority === 'high' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+              }`}>
+                {emergency.emergency_priority}
+              </span>
+              <span className="text-sm text-gray-500">{emergency.emergency_type}</span>
+            </div>
+          </div>
+          <div className="border-t border-gray-200">
+            <dl>
+              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">Location</dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  {emergency.location}
+                </dd>
+              </div>
+              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">Current Situation</dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  {emergency.current_situation}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

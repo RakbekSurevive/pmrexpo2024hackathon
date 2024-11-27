@@ -17,7 +17,10 @@ export default function Home() {
     async function fetchEmergencies() {
       try {
         setIsLoading(true);
-        const records = await pb.collection('ticket').getFullList();
+        const records = await pb.collection('ticket').getFullList({
+          filter: 'status != "close"',
+          sort: '-created',
+        });
         setEmergencies(records as unknown as Emergency[]);
       } catch (error) {
         console.error('Error fetching emergencies:', error);
@@ -31,18 +34,21 @@ export default function Home() {
     // Subscribe to realtime updates
     const subscribeToUpdates = async () => {
       const unsubscribe = await pb.collection('ticket').subscribe('*', function(e) {
-        if (e.action === 'create') {
+        if (e.action === 'create' && e.record.status !== 'close') {
           setEmergencies(prev => [...prev, e.record as unknown as Emergency]);
         } else if (e.action === 'update') {
-          setEmergencies(prev => 
-            prev.map(item => item.id === e.record.id ? (e.record as unknown as Emergency) : item)
-          );
+          if (e.record.status === 'close') {
+            setEmergencies(prev => prev.filter(item => item.id !== e.record.id));
+          } else {
+            setEmergencies(prev => 
+              prev.map(item => item.id === e.record.id ? (e.record as unknown as Emergency) : item)
+            );
+          }
         } else if (e.action === 'delete') {
           setEmergencies(prev => prev.filter(item => item.id !== e.record.id));
         }
       });
 
-      // Cleanup subscription on unmount
       return unsubscribe;
     };
 

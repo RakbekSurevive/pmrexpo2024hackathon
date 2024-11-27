@@ -1,101 +1,99 @@
-import Image from "next/image";
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { pb } from './lib/pocketbase';
+import type { Emergency } from './types/emergency';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const router = useRouter();
+  const [emergencies, setEmergencies] = useState<Emergency[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
+  useEffect(() => {
+    async function fetchEmergencies() {
+      try {
+        setIsLoading(true);
+        const records = await pb.collection('ticket').getFullList();
+        setEmergencies(records as unknown as Emergency[]);
+      } catch (error) {
+        console.error('Error fetching emergencies:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchEmergencies();
+  }, []);
+
+  const handleCardClick = (id: string) => {
+    router.push(`/detail/${id}`);
+  };
+
+  const highPriorityItems = emergencies.filter(item => item.emergency_priority === 'high');
+  const lowPriorityItems = emergencies.filter(item => item.emergency_priority === 'low');
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+      <main className="max-w-5xl mx-auto space-y-12">
+        {/* High Priority Section */}
+        <section>
+          <h2 className="text-2xl font-bold mb-6 px-6 py-2.5 inline-block rounded-full bg-red-50 text-red-700 border border-red-200 shadow-sm">
+            High priority
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {highPriorityItems.map((item) => (
+              <div 
+                key={item.id} 
+                onClick={() => handleCardClick(item.id)}
+                className="cursor-pointer flex items-start gap-6 p-6 rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1"
+              >
+                <div className="w-20 h-20 bg-gradient-to-br from-red-50 to-red-100 rounded-xl flex items-center justify-center shadow-inner">
+                  <span className="text-red-600">map</span>
+                </div>
+                <div className="space-y-2">
+                  <p className="font-medium text-red-600">Priority: {item.emergency_priority}</p>
+                  <p className="text-slate-600">Type: {item.emergency_type}</p>
+                  <p className="text-slate-500">Location: {item.location}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Low Priority Section */}
+        <section>
+          <h2 className="text-2xl font-bold mb-6 px-6 py-2.5 inline-block rounded-full bg-blue-50 text-blue-700 border border-blue-200 shadow-sm">
+            Low priority
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {lowPriorityItems.map((item) => (
+              <div 
+                key={item.id} 
+                onClick={() => handleCardClick(item.id)}
+                className="cursor-pointer flex items-start gap-6 p-6 rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1"
+              >
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl flex items-center justify-center shadow-inner">
+                  <span className="text-blue-600">map</span>
+                </div>
+                <div className="space-y-2">
+                  <p className="font-medium text-blue-600">Priority: {item.emergency_priority}</p>
+                  <p className="text-slate-600">Type: {item.emergency_type}</p>
+                  <p className="text-slate-500">Location: {item.location}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }

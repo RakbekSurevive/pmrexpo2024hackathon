@@ -13,6 +13,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Initial fetch
     async function fetchEmergencies() {
       try {
         setIsLoading(true);
@@ -26,6 +27,30 @@ export default function Home() {
     }
 
     fetchEmergencies();
+
+    // Subscribe to realtime updates
+    const subscribeToUpdates = async () => {
+      const unsubscribe = await pb.collection('ticket').subscribe('*', function(e) {
+        if (e.action === 'create') {
+          setEmergencies(prev => [...prev, e.record as unknown as Emergency]);
+        } else if (e.action === 'update') {
+          setEmergencies(prev => 
+            prev.map(item => item.id === e.record.id ? (e.record as unknown as Emergency) : item)
+          );
+        } else if (e.action === 'delete') {
+          setEmergencies(prev => prev.filter(item => item.id !== e.record.id));
+        }
+      });
+
+      // Cleanup subscription on unmount
+      return unsubscribe;
+    };
+
+    const unsubscribePromise = subscribeToUpdates();
+
+    return () => {
+      unsubscribePromise.then(unsubscribe => unsubscribe());
+    };
   }, []);
 
   const handleCardClick = (id: string) => {
@@ -33,6 +58,7 @@ export default function Home() {
   };
 
   const highPriorityItems = emergencies.filter(item => item.emergency_priority === 'high');
+  const mediumPriorityItems = emergencies.filter(item => item.emergency_priority === 'medium');
   const lowPriorityItems = emergencies.filter(item => item.emergency_priority === 'low');
 
   if (isLoading) {
@@ -50,30 +76,93 @@ export default function Home() {
           <h1 className="text-3xl font-bold text-gray-900">Emergency Dashboard</h1>
           <p className="mt-2 text-sm text-gray-600">Overview of all emergency tickets</p>
         </div>
-        
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-          {emergencies.map((emergency) => (
-            <div key={emergency.id} className="border-b border-gray-200 hover:bg-gray-50">
-              <Link href={`/detail/${emergency.id}`} className="block p-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        emergency.emergency_priority === 'high' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {emergency.emergency_priority}
-                      </span>
-                      <span className="text-sm text-gray-500">{emergency.emergency_type}</span>
+
+        {highPriorityItems.length > 0 && (
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">High Priority Emergencies</h2>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {highPriorityItems.map((emergency) => (
+                <div key={emergency.id} className="bg-white shadow rounded-lg hover:shadow-lg transition-shadow duration-300">
+                  <Link href={`/detail/${emergency.id}`} className="block p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-4">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            emergency.emergency_priority === 'high' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {emergency.emergency_priority}
+                          </span>
+                          <span className="text-sm text-gray-500">{emergency.emergency_type}</span>
+                        </div>
+                        <p className="text-sm text-gray-900">{emergency.location}</p>
+                        <p className="text-sm text-gray-500">{emergency.current_situation}</p>
+                      </div>
+                      <ChevronRightIcon className="h-5 w-5 text-gray-400" />
                     </div>
-                    <p className="text-sm text-gray-900">{emergency.location}</p>
-                    <p className="text-sm text-gray-500">{emergency.current_situation}</p>
-                  </div>
-                  <ChevronRightIcon className="h-5 w-5 text-gray-400" />
+                  </Link>
                 </div>
-              </Link>
+              ))}
             </div>
-          ))}
-        </div>
+          </section>
+        )}
+
+        {mediumPriorityItems.length > 0 && (
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Medium Priority Emergencies</h2>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {mediumPriorityItems.map((emergency) => (
+                <div key={emergency.id} className="bg-white shadow rounded-lg hover:shadow-lg transition-shadow duration-300">
+                  <Link href={`/detail/${emergency.id}`} className="block p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-4">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            emergency.emergency_priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {emergency.emergency_priority}
+                          </span>
+                          <span className="text-sm text-gray-500">{emergency.emergency_type}</span>
+                        </div>
+                        <p className="text-sm text-gray-900">{emergency.location}</p>
+                        <p className="text-sm text-gray-500">{emergency.current_situation}</p>
+                      </div>
+                      <ChevronRightIcon className="h-5 w-5 text-gray-400" />
+                    </div>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {lowPriorityItems.length > 0 && (
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Low Priority Emergencies</h2>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {lowPriorityItems.map((emergency) => (
+                <div key={emergency.id} className="bg-white shadow rounded-lg hover:shadow-lg transition-shadow duration-300">
+                  <Link href={`/detail/${emergency.id}`} className="block p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-4">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            emergency.emergency_priority === 'low' ? 'bg-blue-100 text-blue-800' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {emergency.emergency_priority}
+                          </span>
+                          <span className="text-sm text-gray-500">{emergency.emergency_type}</span>
+                        </div>
+                        <p className="text-sm text-gray-900">{emergency.location}</p>
+                        <p className="text-sm text-gray-500">{emergency.current_situation}</p>
+                      </div>
+                      <ChevronRightIcon className="h-5 w-5 text-gray-400" />
+                    </div>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );
